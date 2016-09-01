@@ -31,7 +31,6 @@ for x in range(0, 29):
     # Gather weekdays
     arrWeekdays = []
     for weekDayColumn in timetableSectionTop.find_elements_by_css_selector(".timetableGridColumn"):
-
         # Get info from attribute
         dayName = weekDayColumn.find_element_by_css_selector(".p1").get_attribute('innerHTML')
         date = weekDayColumn.find_element_by_css_selector(".p2").get_attribute('innerHTML')
@@ -50,26 +49,30 @@ for x in range(0, 29):
     # Gather lessons and their info
     arrLessons = []
     for lessonEntry in timetableContent.find_elements_by_css_selector(".renderedEntry"):
-        
+
         # Get info from attributes
         entry = lessonEntry.get_attribute("style")
         leftPos = entry.index("left")
-        clock = lessonEntry.find_element_by_class_name("topBottomRow").get_attribute('innerHTML')
 
         try:
-            teacher = lessonEntry.find_element_by_css_selector(".centerTable > tr:nth-child(1) > td:nth-child(2)")\
+            clock = lessonEntry.find_element_by_class_name("topBottomRow").get_attribute('innerHTML')
+        except NoSuchElementException:
+            clock = 0
+
+        try:
+            teacher = lessonEntry.find_element_by_css_selector(".centerTable > tr:nth-child(1) > td:nth-child(2)") \
                 .get_attribute("innerHTML")
         except NoSuchElementException:
             teacher = ''
 
         try:
-            subject = lessonEntry.find_element_by_css_selector(".centerTable > tr:nth-child(2) > td:nth-child(1)")\
+            subject = lessonEntry.find_element_by_css_selector(".centerTable > tr:nth-child(2) > td:nth-child(1)") \
                 .get_attribute("innerHTML")
         except NoSuchElementException:
             subject = ''
 
         try:
-            location = lessonEntry.find_element_by_css_selector(".centerTable > tr:nth-child(2) > td:nth-child(2)")\
+            location = lessonEntry.find_element_by_css_selector(".centerTable > tr:nth-child(2) > td:nth-child(2)") \
                 .get_attribute("innerHTML")
         except NoSuchElementException:
             location = ''
@@ -80,12 +83,13 @@ for x in range(0, 29):
         lessonPos = lessonPos.replace("x", "")
 
         # Clock
-        clockStart = clock[:5]
-        clockStartHour = clockStart[0:2]
-        clockStartMinut = clockStart[3:5]
-        clockEnd = clock[6:]
-        clockEndHour = clockEnd[0:2]
-        clockEndMinut = clockEnd[3:5]
+        if clock != 0:
+            clockStart = clock[:5]
+            clockStartHour = clockStart[0:2]
+            clockStartMinut = clockStart[3:5]
+            clockEnd = clock[6:]
+            clockEndHour = clockEnd[0:2]
+            clockEndMinut = clockEnd[3:5]
 
         # Teacher
         teacher = teacher[6:-7]
@@ -110,10 +114,20 @@ for x in range(0, 29):
         # Construct event
         e = Event()
 
-        e.add('summary', subject + " (" + teacher + ")")
-        e.add('dtstart', datetime(int(dateYear), int(dateMonth), int(dateDay), int(clockStartHour) - 2, int(clockStartMinut), 0, tzinfo=UTC))
-        e.add('dtend', datetime(int(dateYear), int(dateMonth), int(dateDay), int(clockEndHour) - 2, int(clockEndMinut), 0, tzinfo=UTC))
-        e.add('dtstamp', datetime(int(dateYear), int(dateMonth), int(dateDay), int(clockStartHour), int(clockStartMinut), 0, tzinfo=UTC))
+        if teacher != '':
+            e.add('summary', subject + " (" + teacher + ")")
+        else:
+            e.add('summary', subject)
+
+        e.add('dtstart',
+              datetime(int(dateYear), int(dateMonth), int(dateDay), int(clockStartHour) - 2, int(clockStartMinut), 0,
+                       tzinfo=UTC))
+        e.add('dtend',
+              datetime(int(dateYear), int(dateMonth), int(dateDay), int(clockEndHour) - 2, int(clockEndMinut), 0,
+                       tzinfo=UTC))
+        e.add('dtstamp',
+              datetime(int(dateYear), int(dateMonth), int(dateDay), int(clockStartHour), int(clockStartMinut), 0,
+                       tzinfo=UTC))
         e['uid'] = '20050115T101010/27346262376@excelautomation.dk' + '/' + subject + '/' + str(dateYear) + \
                    str(dateMonth) + str(dateDay) + str(clockStartHour) + str(clockStartMinut)
         e['location'] = location
